@@ -1,7 +1,7 @@
 import { cn, onCloseApp } from '@/lib/utils'
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
 import { X } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 type Props = {
     children: React.ReactNode
@@ -11,9 +11,16 @@ type Props = {
 const ControlLayer = ({ children, className }: Props) => {
     const [isVisible, setIsVisible] = useState<boolean>(false)
 
-    window.ipcRenderer?.on('hide-plugin', (event, payload) => {
-        setIsVisible(payload.state)
-    })
+    // Register once (and clean up) instead of adding a new listener on every render.
+    useEffect(() => {
+        const handler = (_event: unknown, payload: { state: boolean }) => {
+            setIsVisible(payload.state)
+        }
+        window.ipcRenderer?.on('hide-plugin', handler as any)
+        return () => {
+            window.ipcRenderer?.off('hide-plugin', handler as any)
+        }
+    }, [])
 
     return (
         <div

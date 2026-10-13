@@ -1,13 +1,20 @@
 "use strict";
 const electron = require("electron");
+const wrapped = /* @__PURE__ */ new Map();
 electron.contextBridge.exposeInMainWorld("ipcRenderer", {
-  on(...args) {
-    const [channel, listener] = args;
-    return electron.ipcRenderer.on(channel, (event, ...args2) => listener(event, ...args2));
+  on(channel, listener) {
+    const wrapper = (event, ...args) => listener(event, ...args);
+    if (!wrapped.has(listener)) wrapped.set(listener, /* @__PURE__ */ new Map());
+    wrapped.get(listener).set(channel, wrapper);
+    electron.ipcRenderer.on(channel, wrapper);
   },
-  off(...args) {
-    const [channel, ...omit] = args;
-    return electron.ipcRenderer.off(channel, ...omit);
+  off(channel, listener) {
+    var _a;
+    const wrapper = (_a = wrapped.get(listener)) == null ? void 0 : _a.get(channel);
+    if (wrapper) {
+      electron.ipcRenderer.off(channel, wrapper);
+      wrapped.get(listener).delete(channel);
+    }
   },
   send(...args) {
     const [channel, ...omit] = args;

@@ -6,6 +6,7 @@ echo ==========================================================
 echo.
 echo [1/2] Installing Express Server dependencies (with FFmpeg)...
 cd /d %~dp0express-server
+if not exist .env copy .env.example .env >nul
 call npm install
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to install express-server dependencies.
@@ -17,6 +18,7 @@ cd /d %~dp0
 echo.
 echo [2/2] Installing Electron Desktop App dependencies...
 cd /d %~dp0desktop-mindshare
+if not exist .env copy .env.example .env >nul
 call npm install
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to install desktop-mindshare dependencies.

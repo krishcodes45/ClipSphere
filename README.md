@@ -25,6 +25,21 @@ ClipSphere is an AI-powered desktop screen recording and video processing applic
 
 ---
 
+## Configuration (.env)
+
+Both apps read their settings from `.env` files that are **not** committed. `setup.bat` and the `run-*.bat`
+launchers create them automatically from the `.env.example` files. If you start things manually, run:
+
+```bash
+cp express-server/.env.example express-server/.env
+cp desktop-mindshare/.env.example desktop-mindshare/.env
+```
+
+Then add your own `GEMINI_API_KEY` (and AWS keys if you want S3 upload) to `express-server/.env`. Without
+`desktop-mindshare/.env` the desktop widget cannot start (it needs `VITE_CLERK_PUBLISHABLE_KEY`).
+
+---
+
 ## How to Run the Project
 
 ### Method 1: One-Click Launcher (Recommended)

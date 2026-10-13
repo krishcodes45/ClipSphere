@@ -74,6 +74,9 @@ try {
   console.warn('⚠️ Google Cloud SpeechClient initialization notice:', err.message);
 }
 
+// ✍️ Per-file queue of in-flight chunk writes (see 'video-chunks')
+const pendingWrites = new Map();
+
 // 📁 In-memory user profile store for standalone desktop execution
 const userProfiles = new Map();
 
@@ -164,26 +167,35 @@ const notifyNextApi = async (path, body) => {
 io.on('connection', (socket) => {
   console.log('🟢 Socket connected:', socket.id);
 
-  socket.on('video-chunks', async (data) => {
+  // Chunks for a file are appended strictly one after another. Previously each
+  // chunk was piped to its own write stream, so 'process-video' could start
+  // before the final chunk was flushed, producing truncated/corrupt videos.
+  socket.on('video-chunks', (data) => {
     if (!data || !data.filename || !data.chunks) return;
 
-    const filePath = path.join(__dirname, 'temp_upload', data.filename);
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-
-    const writeStream = fs.createWriteStream(filePath, { flags: 'a' });
+    const safeName = path.basename(String(data.filename));
+    const filePath = path.join(__dirname, 'temp_upload', safeName);
     const buffer = Buffer.from(data.chunks);
-    const readStream = Readable.from(buffer);
 
-    readStream.pipe(writeStream).on('finish', () => {
-      // Chunk appended
-    });
+    const previous = pendingWrites.get(safeName) || Promise.resolve();
+    const next = previous
+      .then(() => fs.promises.mkdir(path.dirname(filePath), { recursive: true }))
+      .then(() => fs.promises.appendFile(filePath, buffer))
+      .catch((err) => console.error('🔴 Error writing video chunk:', err.message));
+    pendingWrites.set(safeName, next);
   });
 
   socket.on('process-video', async (data) => {
     console.log('🟢 Received process-video request:', data);
-    const uniqueFilename = `${data.filename}-${uuidv4()}.webm`;
-    const filePath = path.join(__dirname, 'temp_upload', data.filename);
+    if (!data || !data.filename) return;
+    const safeName = path.basename(String(data.filename));
+    const uniqueFilename = `${path.basename(safeName, '.webm')}-${uuidv4()}.webm`;
+    const filePath = path.join(__dirname, 'temp_upload', safeName);
     const audioPath = path.join(__dirname, 'temp_upload', `${uuidv4()}.wav`);
+
+    // Wait until every chunk received so far has been written to disk.
+    await (pendingWrites.get(safeName) || Promise.resolve());
+    pendingWrites.delete(safeName);
 
     if (!fs.existsSync(filePath)) {
       console.log('🔴 Error: Video file does not exist at:', filePath);
@@ -304,7 +316,7 @@ Return ONLY a valid JSON object in this exact structure without markdown backtic
       try {
         if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        console.log(`🟢 Temporary files cleaned up: ${data.filename}`);
+        console.log(`🟢 Temporary files cleaned up: ${safeName}`);
       } catch (cleanupErr) {
         console.warn('⚠️ Temporary file cleanup notice:', cleanupErr.message);
       }

@@ -108,6 +108,22 @@ function createWindow() {
     });
   });
 
+  // In dev, surface renderer console output / errors in the terminal so a blank
+  // window is easy to diagnose.
+  if (VITE_DEV_SERVER_URL) {
+    const forward = (name: string, wc: Electron.WebContents) => {
+      wc.on('console-message', (_e, level, message, line, sourceId) => {
+        if (level >= 2) console.error(`[${name}] ${message} (${sourceId}:${line})`)
+      })
+      wc.on('render-process-gone', (_e, details) => {
+        console.error(`[${name}] renderer process gone:`, details.reason)
+      })
+    }
+    forward('main', win.webContents)
+    forward('studio', studio.webContents)
+    forward('webcam', floatingWebCam.webContents)
+  }
+
   // Add error event listeners for debugging
   studio.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
     console.error("❌ Studio window failed to load:", errorCode, errorDescription, validatedURL);

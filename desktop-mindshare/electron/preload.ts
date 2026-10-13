@@ -1,14 +1,23 @@
 import { ipcRenderer, contextBridge } from 'electron'
 
+// Remember the wrapped listener for each original one, so `off` can really
+// remove it (the wrapper is what gets registered with ipcRenderer).
+const wrapped = new Map<unknown, Map<string, (...args: any[]) => void>>()
+
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
-  on(...args: Parameters<typeof ipcRenderer.on>) {
-    const [channel, listener] = args
-    return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
+  on(channel: string, listener: (event: unknown, ...args: any[]) => void) {
+    const wrapper = (event: unknown, ...args: any[]) => listener(event, ...args)
+    if (!wrapped.has(listener)) wrapped.set(listener, new Map())
+    wrapped.get(listener)!.set(channel, wrapper)
+    ipcRenderer.on(channel, wrapper)
   },
-  off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.off(channel, ...omit)
+  off(channel: string, listener: (event: unknown, ...args: any[]) => void) {
+    const wrapper = wrapped.get(listener)?.get(channel)
+    if (wrapper) {
+      ipcRenderer.off(channel, wrapper)
+      wrapped.get(listener)!.delete(channel)
+    }
   },
   send(...args: Parameters<typeof ipcRenderer.send>) {
     const [channel, ...omit] = args

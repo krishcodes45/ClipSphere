@@ -33,23 +33,22 @@ const StudioTray = () => {
     }
 
     useEffect(() => {
-        const handler = (event: any, payload: any) => {
+        const handler = (_event: any, payload: any) => {
             if (!payload || !payload.screen) return;
             setOnSources(payload);
         };
         window.ipcRenderer?.on('profile-recieved', handler);
         return () => {
-            // cleanup listener if supported
+            window.ipcRenderer?.off('profile-recieved', handler);
         };
     }, []);
 
     const videoElement = useRef<HTMLVideoElement | null>(null)
 
     useEffect(() => {
+        // (The old cleanup called selectSources a second time, opening another
+        // capture stream on every change and leaking the previous one.)
         if (onSources && onSources.screen) selectSources(onSources, videoElement)
-        return () => {
-            if (onSources) selectSources(onSources, videoElement)
-        }
     }, [onSources]);
 
     useEffect(() => {
@@ -68,7 +67,7 @@ const StudioTray = () => {
                 setOnTimer('00:00:00')
                 clearInterval(recordTimeInterval)
             }
-        }, 1)
+        }, 250)
     
         return () => clearInterval(recordTimeInterval)
     }, [recording])
