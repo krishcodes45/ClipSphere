@@ -1,0 +1,32 @@
+
+# Dependencies
+**/node_modules/
+
+# Environment variables and secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Electron release packages - large generated files
+desktop-mindshare/release/
+
+# Build output
+**/dist/
+**/dist-electron/
+**/build/
+**/coverage/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# IDE settings
+.vscode/
+.idea/
+
+# Generated recordings - keep only if not required by the app
+*.webm
+*.mp4
+*.mov
+*.mkv
