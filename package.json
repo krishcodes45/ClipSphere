@@ -1,0 +1,13 @@
+{
+  "name": "clipsphere",
+  "version": "1.0.0",
+  "description": "ClipSphere: An AI-Powered Video Processing and Sharing Platform",
+  "scripts": {
+    "start": "run-all.bat",
+    "server": "cd express-server && node server.js",
+    "desktop": "cd desktop-mindshare && npm run dev",
+    "build:desktop": "cd desktop-mindshare && npm run build"
+  },
+  "author": "ClipSphere Team",
+  "license": "ISC"
+}

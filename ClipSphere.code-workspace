@@ -1,0 +1,19 @@
+{
+  "folders": [
+    {
+      "name": "ClipSphere (Root)",
+      "path": "."
+    },
+    {
+      "name": "Desktop Application (Electron + React)",
+      "path": "desktop-mindshare"
+    },
+    {
+      "name": "Backend Server (Express + Socket.IO + AI)",
+      "path": "express-server"
+    }
+  ],
+  "settings": {
+    "typescript.tsdk": "desktop-mindshare/node_modules/typescript/lib"
+  }
+}
